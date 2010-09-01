@@ -2,7 +2,7 @@ TroyORM - An OR Mapper for MongoDB from hell.
 
 It is work in progress :).
 
-Annotation based immutable bean mapping:
+Annotation based immutable bean mapping (that explains the "from hell" part):
 
 // Optional name for collection to be used, otherwise the class name will be used
 @TroyCollectionName("book")
