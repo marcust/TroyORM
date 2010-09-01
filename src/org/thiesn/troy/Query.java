@@ -72,13 +72,13 @@ public class Query<T> {
 	private final Constructor<T> _objectConstructor;
 	private final ImmutableMap<String, Field> _fieldsByKey;
 
-	public Query(DBCollection collection, Constructor<T> objectConstructor, ImmutableMap<String, Field> fieldsByKey) {
+	Query(DBCollection collection, Constructor<T> objectConstructor, ImmutableMap<String, Field> fieldsByKey) {
 		_collection = collection;
 		_objectConstructor = objectConstructor;
 		_fieldsByKey = fieldsByKey;
 	}
 
-	protected Iterable<T> find( final DBObject query ) {
+	public Iterable<T> find( final DBObject query ) {
 		final DBCursor cur = _collection.find(query);
 
 		return Iterables.transform( cur, TO_OBJECT_FUNCTION );
@@ -114,11 +114,11 @@ public class Query<T> {
 	}
 	
 
-	protected Iterable<T> findWithoutProperty( final String property ) {
+	protected Iterable<T> findWithoutKey( final String property ) {
 		return find( new BasicDBObject( property, doesNotExist() ) );
 	}
 	
-	protected Iterable<T> findWithProperty( final String property ) {
+	protected Iterable<T> findWithKey( final String property ) {
 		return find( new BasicDBObject( property, exists() ) );
 	}
 

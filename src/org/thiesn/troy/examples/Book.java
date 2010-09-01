@@ -25,22 +25,25 @@ import org.thiesn.troy.annotations.TroyId;
 import org.thiesn.troy.annotations.TroyKey;
 import org.thiesn.troy.annotations.TroyTransient;
 
+// Optional name for collection to be used, otherwise the class name will be used
 @TroyCollectionName("book")
 public class Book {
 	
 	@TroyId
 	private final String _isbn;
 	
+	// optional mapping of field to different key in mongo
 	@TroyKey("titleOfBook")
 	private final String _title;
 	
+	// will be stored as author
 	private final String _author;
 	
 	@TroyTransient
 	private final String _dontWantToStoreThis = "foo";
 	
 
-	protected Book(String isbn, String title, String author) {
+	private Book(String isbn, String title, String author) {
 		super();
 		_isbn = isbn;
 		_title = title;

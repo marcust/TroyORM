@@ -20,50 +20,35 @@
 
 package org.thiesn.troy.examples;
 
+import org.thiesn.troy.annotations.TroyCollectionName;
+import org.thiesn.troy.annotations.TroyId;
+import org.thiesn.troy.annotations.TroyKey;
 
-class MutableBook extends Book {
+@TroyCollectionName("book")
+public class BookTitleRefresh {
 
-	private String _isbn;
+	@TroyId
+	private final String _isbn;
 	
-	private String _title;
-	
-	private String _author;
+	@TroyKey("titleOfBook")
+	private final String _title;
 
-	public MutableBook(String isbn, String title, String author) {
-		super(isbn, title, author);
+	private BookTitleRefresh(String isbn, String title) {
+		super();
+		_isbn = isbn;
+		_title = title;
 	}
 
-	@Override
+	public static BookTitleRefresh create(String isbn, String title) {
+		return new BookTitleRefresh(isbn, title);
+	}
+	
 	public String getIsbn() {
 		return _isbn;
 	}
 
-	public void setIsbn(String isbn) {
-		_isbn = isbn;
-	}
-
-	@Override
 	public String getTitle() {
 		return _title;
 	}
-
-	public void setTitle(String title) {
-		_title = title;
-	}
-
-	@Override
-	public String getAuthor() {
-		return _author;
-	}
-
-	public void setAuthor(String author) {
-		_author = author;
-	}
-	
-	
-	
-	
-	
-	
 	
 }

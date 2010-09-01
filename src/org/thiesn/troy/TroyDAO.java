@@ -24,6 +24,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.thiesn.troy.annotations.TroyId;
@@ -36,6 +37,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -45,13 +47,22 @@ public class TroyDAO<T> {
 
 	public static final String ID_KEY = "_id";
 
-	private final Function<T, DBObject> TO_DB_OBJECT = new Function<T,DBObject>() {
+	private static final Object UPDATER_LOCK = new Object();
+
+	static class ConvertToDBObject<U> implements Function<U, DBObject> {
+
+		private final Map<String, Field> _objectFieldsByKey;
+		
+		private ConvertToDBObject( Map<String, Field> objectFieldsByKey) {
+			super();
+			_objectFieldsByKey = objectFieldsByKey;
+		}
 
 		@Override
-		public DBObject apply(T value) {
+		public DBObject apply(U value ) {
 			final DBObject retval = new BasicDBObject();
 
-			for ( final Entry<String, Field> entry : _fieldsByKey.entrySet() ) {
+			for ( final Entry<String, Field> entry : _objectFieldsByKey.entrySet() ) {
 				try {
 					retval.put( entry.getKey(), entry.getValue().get( value ) );
 				} catch (IllegalArgumentException e) {
@@ -63,34 +74,23 @@ public class TroyDAO<T> {
 
 			return retval;
 		}
-
-	};
-
-	private Class<T> _clz;
-	private DBCollection _collection;
-	private ImmutableMap<String, Field> _fieldsByKey;
-	private Query<T> _query;
+		
+	}
+	
+	private final DBCollection _collection;
+	private final ImmutableMap<String, Field> _fieldsByKey;
+	private final Query<T> _query;
+	private final Map<Class<?>, Updater<?>> updaters = Maps.newHashMap();
+	private final ConvertToDBObject<T> _convertFunction;
 
 	@SuppressWarnings("unchecked")
-	public TroyDAO(Class<T> clz, DBCollection collection )  {
-		_clz = clz;
+	TroyDAO(Class<T> clz, DBCollection collection )  {
 		_collection = collection;
 
-		final Field[] fields = _clz.getDeclaredFields();
-		final Builder<String, Field> fieldMapBuilder = ImmutableMap.<String, Field>builder(); 
-
-		for ( final Field field : fields ) {
-			if ( field.isAnnotationPresent( TroyTransient.class ) ) {
-				continue;
-			}
-
-			field.setAccessible( true );
-			fieldMapBuilder.put( extractKeyName( field ), field );
-
-		}
-
-		_fieldsByKey = fieldMapBuilder.build();
-
+		_fieldsByKey = classToFieldMap(clz);
+		_convertFunction = new ConvertToDBObject<T>( _fieldsByKey );
+		
+		
 		Constructor<T> objectConstructor;
 		try {
 			objectConstructor = clz.getConstructor();
@@ -115,7 +115,24 @@ public class TroyDAO<T> {
 
 	}
 
-	private String extractKeyName(Field field) {
+	static <T> ImmutableMap<String, Field> classToFieldMap(Class<T> clz) {
+		final Field[] fields = clz.getDeclaredFields();
+		final Builder<String, Field> fieldMapBuilder = ImmutableMap.<String, Field>builder(); 
+
+		for ( final Field field : fields ) {
+			if ( field.isAnnotationPresent( TroyTransient.class ) ) {
+				continue;
+			}
+
+			field.setAccessible( true );
+			fieldMapBuilder.put( extractKeyName( field ), field );
+
+		}
+
+		return fieldMapBuilder.build();
+	}
+
+	private static String extractKeyName(Field field) {
 		if ( field.isAnnotationPresent( TroyKey.class ) ) {
 			return field.getAnnotation( TroyKey.class ).value();
 		}
@@ -135,32 +152,29 @@ public class TroyDAO<T> {
 	}
 
 	public WriteResult update( final T value ) {
-		return _collection.update( getId( value ), TO_DB_OBJECT.apply( value ) );
-	}
-
-	private DBObject getId(T value) {
-		return new BasicDBObject( ID_KEY, accessField( "_id", value ) );
-
-	}
-
-	private Object accessField( final String key, final T object ) {
-		try {
-			return _fieldsByKey.get( key ).get( object );
-
-		} catch (IllegalArgumentException e) {
-			throw new RuntimeException( e );
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException( e );
-		}
-
+		return _collection.update( TroyUtils.getId( _fieldsByKey, value ), _convertFunction.apply( value ) );
 	}
 
 	private List<DBObject> toDBObject(List<T> values) {
-		return Lists.transform( values, TO_DB_OBJECT );
+		return Lists.transform( values, _convertFunction );
 	}
 
 	public Query<T> query() {
 		return _query;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <U> Updater<U> updaterFor(Class<U> updaterClass ) {
+		synchronized ( UPDATER_LOCK ) {
+			if ( updaters .containsKey( updaterClass ) ) {
+				return (Updater<U>) updaters.get( updaterClass );
+			}
+			
+			final ImmutableMap<String, Field> classAsFieldMap = classToFieldMap( updaterClass );
+			updaters.put( updaterClass, new Updater<U>( _collection, classAsFieldMap, new ConvertToDBObject<U>( classAsFieldMap ) ) );
+			
+			return (Updater<U>) updaters.get( updaterClass );
+		}
 	}
 
 }

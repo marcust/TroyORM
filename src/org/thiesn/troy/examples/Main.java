@@ -45,9 +45,9 @@ public class Main {
 		
 		System.out.println( "Loaded " + loadedBook.toString() );
 		
-		final MutableBook mutable = new MutableBook( key, "MongoDB & TroyORM", "Marcus Thiesen et al" );
+		final BookTitleRefresh refresh = BookTitleRefresh.create( key, "MongoDB & TroyORM" );
 		
-		bookDao.update( mutable );
+		bookDao.updaterFor( BookTitleRefresh.class ).update( refresh );
 		
 		System.out.println("Updated Book");
 		
