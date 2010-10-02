@@ -18,11 +18,12 @@
  *
  */
 
-package org.thiesn.troy;
+package org.thiesen.troy;
 
 import java.net.UnknownHostException;
 
-import org.thiesn.troy.annotations.TroyCollectionName;
+import org.thiesen.troy.annotations.TroyCollectionName;
+import org.thiesen.troy.conversion.TypeConversionMap;
 
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -34,13 +35,16 @@ public class TroyORMDAOFactory {
 	private final static int DEFAULT_PORT = 27017;
 	private final static String DEFAULT_HOST = "localhost";
 	private DB _dbConnection;
+	private TypeConversionMap _conversionMap;
 	
+	private final static TypeConversionMap DEFAULT_CONVERSION_MAP = TypeConversionMap.defaultMap(); 
 
-	private TroyORMDAOFactory( final String database, final String host, final int port) throws UnknownHostException, MongoException {
+	private TroyORMDAOFactory( final String database, final String host, final int port, final TypeConversionMap conversionMap ) throws UnknownHostException, MongoException {
 		super();
 		final Mongo m = new Mongo( host, port );
 		
 		_dbConnection = m.getDB( database );
+		_conversionMap = conversionMap;
 	}
 	
 	public static TroyORMDAOFactory create( final String database ) throws UnknownHostException, MongoException {
@@ -52,13 +56,26 @@ public class TroyORMDAOFactory {
 	}
 	
 	public static TroyORMDAOFactory create( final String database, final String host, final int port ) throws UnknownHostException, MongoException {
-		return new TroyORMDAOFactory( database, host, port );
+		return new TroyORMDAOFactory( database, host, port, DEFAULT_CONVERSION_MAP );
 	}
+	
+	public static TroyORMDAOFactory create( final String database, final TypeConversionMap conversionMap ) throws UnknownHostException, MongoException {
+		return create( database, DEFAULT_HOST, DEFAULT_PORT, conversionMap );
+	}
+	
+	public static TroyORMDAOFactory create( final String database, final String host, final TypeConversionMap conversionMap ) throws UnknownHostException, MongoException {
+		return create( database, host, DEFAULT_PORT, conversionMap );
+	}
+	
+	public static TroyORMDAOFactory create( final String database, final String host, final int port, final TypeConversionMap conversionMap ) throws UnknownHostException, MongoException {
+		return new TroyORMDAOFactory( database, host, port, conversionMap );
+	}
+	
 	
     public <T> TroyDAO<T> makeDaoForClass( final Class<T> clz ) {
     	final DBCollection collection = _dbConnection.getCollection( extractCollectionName( clz ) );
     	
-    	return new TroyDAO<T>( clz, collection );
+    	return new TroyDAO<T>( clz, collection, _conversionMap );
     }
 
     private static String extractCollectionName( final Class<?> clz ) {

@@ -18,12 +18,15 @@
  *
  */
 
-package org.thiesn.troy;
+package org.thiesen.troy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Map.Entry;
+
+import org.thiesen.troy.conversion.TypeConversionMap;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
@@ -35,7 +38,7 @@ import com.mongodb.DBObject;
 
 public class Query<T> {
 
-	private final Function<DBObject,T> TO_OBJECT_FUNCTION = new Function<DBObject, T>() {
+	private class ToObjectFunction implements Function<DBObject, T> {
 
 		@Override
 		public T apply(DBObject dbObject) {
@@ -48,7 +51,9 @@ public class Query<T> {
 				for ( final Entry<String, Field> entry : _fieldsByKey.entrySet() ) {
 					final String key = entry.getKey();
 					if ( dbObject.containsField( key ) ) {
-						entry.getValue().set( retval , dbObject.get( key ) );
+						final Class<?> type = entry.getValue().getType();
+						
+						entry.getValue().set( retval , _typeConversionMap.convertIfPossibleFromDb( type, dbObject.get( key ) ) );
 					} else {
 						entry.getValue().set( retval, null );
 					}
@@ -71,17 +76,20 @@ public class Query<T> {
 	private final DBCollection _collection;
 	private final Constructor<T> _objectConstructor;
 	private final ImmutableMap<String, Field> _fieldsByKey;
+	private final TypeConversionMap _typeConversionMap;
 
-	Query(DBCollection collection, Constructor<T> objectConstructor, ImmutableMap<String, Field> fieldsByKey) {
+	Query(DBCollection collection, Constructor<T> objectConstructor, ImmutableMap<String, Field> fieldsByKey,
+			TypeConversionMap conversionMap) {
 		_collection = collection;
 		_objectConstructor = objectConstructor;
 		_fieldsByKey = fieldsByKey;
+		_typeConversionMap = conversionMap; 
 	}
 
 	public Iterable<T> find( final DBObject query ) {
 		final DBCursor cur = _collection.find(query);
 
-		return Iterables.transform( cur, TO_OBJECT_FUNCTION );
+		return Iterables.transform( cur, new ToObjectFunction() );
 	}
 	
 	protected long count( final DBObject query ) {
@@ -90,7 +98,7 @@ public class Query<T> {
 	
 	public Iterable<T> findAll() {
 		final DBCursor cur = _collection.find();
-		return Iterables.transform( cur, TO_OBJECT_FUNCTION );
+		return Iterables.transform( cur, new ToObjectFunction() );
 	}
 	
 	public long countAll() {
@@ -98,7 +106,7 @@ public class Query<T> {
 	}
 	
 	protected T findOne( final DBObject query ) {
-		return TO_OBJECT_FUNCTION.apply( _collection.findOne( query ) );
+		return new ToObjectFunction().apply( _collection.findOne( query ) );
 	}
 
 	protected DBObject exists() {
@@ -124,6 +132,10 @@ public class Query<T> {
 
 	public T byId(String key) {
 		return findOne( new BasicDBObject( TroyDAO.ID_KEY, key ) );
+	}
+
+	public Iterable<T> in(String property, List<String> values ) {
+		return find( new BasicDBObject( property, new BasicDBObject( "$in", values ) ) );
 	}
 	
 	

@@ -18,11 +18,11 @@
  *
  */
 
-package org.thiesn.troy;
+package org.thiesen.troy;
 
 import java.lang.reflect.Field;
 
-import org.thiesn.troy.TroyDAO.ConvertToDBObject;
+import org.thiesen.troy.TroyDAO.ConvertToDBObject;
 
 import com.google.common.collect.ImmutableMap;
 import com.mongodb.DBCollection;

@@ -17,38 +17,31 @@
  *  along with TroyORM.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+package org.thiesen.troy.conversion;
 
-package org.thiesn.troy.examples;
+import java.net.URI;
 
-import org.thiesn.troy.annotations.TroyCollectionName;
-import org.thiesn.troy.annotations.TroyId;
-import org.thiesn.troy.annotations.TroyKey;
+public class URIConverter implements TypeConverter<URI, String> {
 
-@TroyCollectionName("book")
-public class BookTitleRefresh {
-
-	@TroyId
-	private final String _isbn;
-	
-	@TroyKey("titleOfBook")
-	private final String _title;
-
-	private BookTitleRefresh(String isbn, String title) {
-		super();
-		_isbn = isbn;
-		_title = title;
+	@Override
+	public Class<URI> getFieldType() {
+		return URI.class;
 	}
 
-	public static BookTitleRefresh create(String isbn, String title) {
-		return new BookTitleRefresh(isbn, title);
-	}
-	
-	public String getIsbn() {
-		return _isbn;
+	@Override
+	public Class<String> getConvertedType() {
+		return String.class;
 	}
 
-	public String getTitle() {
-		return _title;
+	@Override
+	public String convertFieldValue(URI source) {
+		return source.toString();
 	}
-	
+
+	@Override
+	public URI convertDatabaseValue(String dbValue) {
+		return URI.create( dbValue );
+	}
+
+
 }

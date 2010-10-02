@@ -18,7 +18,7 @@
  *
  */
 
-package org.thiesn.troy.annotations;
+package org.thiesen.troy.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,8 +27,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface TroyKey {
+public @interface TroyId {
 
-	String value();
+	// simple marker annotation
 	
 }

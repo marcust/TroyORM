@@ -18,12 +18,12 @@
  *
  */
 
-package org.thiesn.troy.examples;
+package org.thiesen.troy.examples;
 
 import java.net.UnknownHostException;
 
-import org.thiesn.troy.TroyDAO;
-import org.thiesn.troy.TroyORMDAOFactory;
+import org.thiesen.troy.TroyDAO;
+import org.thiesen.troy.TroyORMDAOFactory;
 
 import com.mongodb.MongoException;
 

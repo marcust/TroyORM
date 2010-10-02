@@ -17,18 +17,15 @@
  *  along with TroyORM.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+package org.thiesen.troy.conversion;
 
-package org.thiesn.troy.annotations;
+public interface TypeConverter<FIELD_TYPE,CONVERTED_TYPE> {
+	
+	Class<FIELD_TYPE> getFieldType();
+	Class<CONVERTED_TYPE> getConvertedType();
+	
+	CONVERTED_TYPE convertFieldValue( FIELD_TYPE fieldValue );
+	FIELD_TYPE convertDatabaseValue( CONVERTED_TYPE dbValue );
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface TroyId {
-
-	// simple marker annotation
 	
 }

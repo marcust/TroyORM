@@ -18,12 +18,12 @@
  *
  */
 
-package org.thiesn.troy.examples;
+package org.thiesen.troy.examples;
 
-import org.thiesn.troy.annotations.TroyCollectionName;
-import org.thiesn.troy.annotations.TroyId;
-import org.thiesn.troy.annotations.TroyKey;
-import org.thiesn.troy.annotations.TroyTransient;
+import org.thiesen.troy.annotations.TroyCollectionName;
+import org.thiesen.troy.annotations.TroyId;
+import org.thiesen.troy.annotations.TroyKey;
+import org.thiesen.troy.annotations.TroyTransient;
 
 // Optional name for collection to be used, otherwise the class name will be used
 @TroyCollectionName("book")

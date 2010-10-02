@@ -18,15 +18,34 @@
  *
  */
 
-package org.thiesn.troy.annotations;
+package org.thiesen.troy;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.util.Map;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface TroyTransient {
-	// simple marker interface
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+
+class TroyUtils {
+
+	private TroyUtils() {
+		// do nothing, utility class
+	}
+	
+	static DBObject getId( final Map<String, Field> fieldsByKey, Object value) {
+		return new BasicDBObject( TroyDAO.ID_KEY, accessField( fieldsByKey, TroyDAO.ID_KEY, value ) );
+	}
+
+	static Object accessField( final Map<String, Field> fieldsByKey, final String key, final Object object ) {
+		try {
+			return fieldsByKey.get( key ).get( object );
+
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException( e );
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException( e );
+		}
+	}
+	
+	
 }

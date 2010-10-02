@@ -18,7 +18,7 @@
  *
  */
 
-package org.thiesn.troy;
+package org.thiesen.troy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -27,9 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.thiesn.troy.annotations.TroyId;
-import org.thiesn.troy.annotations.TroyKey;
-import org.thiesn.troy.annotations.TroyTransient;
+import org.thiesen.troy.annotations.TroyId;
+import org.thiesen.troy.annotations.TroyKey;
+import org.thiesen.troy.annotations.TroyTransient;
+import org.thiesen.troy.conversion.TypeConversionMap;
 
 import sun.reflect.ReflectionFactory;
 
@@ -52,19 +53,23 @@ public class TroyDAO<T> {
 	static class ConvertToDBObject<U> implements Function<U, DBObject> {
 
 		private final Map<String, Field> _objectFieldsByKey;
+		private TypeConversionMap _conversionMap;
 		
-		private ConvertToDBObject( Map<String, Field> objectFieldsByKey) {
+		private ConvertToDBObject( Map<String, Field> objectFieldsByKey, TypeConversionMap conversionMap) {
 			super();
 			_objectFieldsByKey = objectFieldsByKey;
+			_conversionMap = conversionMap;
 		}
 
 		@Override
-		public DBObject apply(U value ) {
+		public DBObject apply( U value ) {
 			final DBObject retval = new BasicDBObject();
 
 			for ( final Entry<String, Field> entry : _objectFieldsByKey.entrySet() ) {
 				try {
-					retval.put( entry.getKey(), entry.getValue().get( value ) );
+					final Class<?> type = entry.getValue().getType();
+					
+					retval.put( entry.getKey(), _conversionMap.convertIfPossibleFromField( type, entry.getValue().get( value ) ) );
 				} catch (IllegalArgumentException e) {
 					throw new RuntimeException( e );
 				} catch (IllegalAccessException e) {
@@ -82,13 +87,15 @@ public class TroyDAO<T> {
 	private final Query<T> _query;
 	private final Map<Class<?>, Updater<?>> updaters = Maps.newHashMap();
 	private final ConvertToDBObject<T> _convertFunction;
+	private final TypeConversionMap _conversionMap;
 
 	@SuppressWarnings("unchecked")
-	TroyDAO(Class<T> clz, DBCollection collection )  {
+	TroyDAO(Class<T> clz, DBCollection collection, TypeConversionMap conversionMap )  {
 		_collection = collection;
 
 		_fieldsByKey = classToFieldMap(clz);
-		_convertFunction = new ConvertToDBObject<T>( _fieldsByKey );
+		_conversionMap = conversionMap;
+		_convertFunction = new ConvertToDBObject<T>( _fieldsByKey, conversionMap );
 		
 		
 		Constructor<T> objectConstructor;
@@ -110,7 +117,7 @@ public class TroyDAO<T> {
 			objectConstructor = rf.newConstructorForSerialization( clz, objDef );
 		}
 		
-		_query = new Query<T>( collection, objectConstructor, _fieldsByKey );
+		_query = new Query<T>( collection, objectConstructor, _fieldsByKey, conversionMap );
 
 
 	}
@@ -171,7 +178,7 @@ public class TroyDAO<T> {
 			}
 			
 			final ImmutableMap<String, Field> classAsFieldMap = classToFieldMap( updaterClass );
-			updaters.put( updaterClass, new Updater<U>( _collection, classAsFieldMap, new ConvertToDBObject<U>( classAsFieldMap ) ) );
+			updaters.put( updaterClass, new Updater<U>( _collection, classAsFieldMap, new ConvertToDBObject<U>( classAsFieldMap, _conversionMap ) ) );
 			
 			return (Updater<U>) updaters.get( updaterClass );
 		}
